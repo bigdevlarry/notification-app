@@ -66,7 +66,7 @@ services:
       - .:/var/www/html
       - /var/www/html/vendor
     entrypoint: []
-    command: php artisan test --parallel
+    command: php artisan test
     profiles:
       - test
 
