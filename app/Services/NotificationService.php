@@ -6,6 +6,7 @@ use App\Enums\NotificationPriority;
 use App\Enums\NotificationStatus;
 use App\Jobs\ProcessNotificationJob;
 use App\Models\Notification;
+use App\Services\Concerns\ResolvesCorrelationId;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,8 @@ use Illuminate\Support\Str;
 
 class NotificationService
 {
+    use ResolvesCorrelationId;
+
     public function create(array $data): Notification
     {
         $priority = NotificationPriority::from($data['priority']);
@@ -31,7 +34,9 @@ class NotificationService
         );
 
         if ($notification->wasRecentlyCreated) {
-            ProcessNotificationJob::dispatch($notification->id)
+            Log::info('Notification created', ['channel' => $data['channel'], 'priority' => $priority->value]);
+
+            ProcessNotificationJob::dispatch($notification->id, $this->correlationId())
                 ->onQueue($this->resolveQueue($priority))
                 ->afterCommit();
         } else {
@@ -48,6 +53,8 @@ class NotificationService
         }
 
         $batchId = (string) Str::uuid();
+
+        Log::info('Batch notification created', ['batch_id' => $batchId, 'count' => count($notifications)]);
 
         try {
             $created = DB::transaction(function () use ($notifications, $batchId) {
@@ -73,12 +80,14 @@ class NotificationService
             throw $e;
         }
 
+        $correlationId = $this->correlationId();
+
         $created->groupBy(fn ($n) => $n->priority->value)
-            ->each(function ($group, $priorityValue) use ($batchId) {
+            ->each(function ($group, $priorityValue) use ($batchId, $correlationId) {
                 $queue = $this->resolveQueue(NotificationPriority::from($priorityValue));
 
                 Bus::batch(
-                    $group->map(fn ($n) => new ProcessNotificationJob($n->id))->all()
+                    $group->map(fn ($n) => new ProcessNotificationJob($n->id, $correlationId))->all()
                 )
                 ->onQueue($queue)
                 ->then(fn () => Log::info('Batch completed', ['batch_id' => $batchId, 'queue' => $queue]))

@@ -64,6 +64,8 @@ class NotificationController extends Controller
         $notification = Notification::findOrFail($id);
         $notification->markAsRead();
 
+        Log::info('Notification marked as read', ['channel' => $notification->channel->value]);
+
         return new NotificationResource($notification->fresh());
     }
 
@@ -97,6 +99,8 @@ class NotificationController extends Controller
 
         $notification->markAsCancelled();
 
+        Log::info('Notification cancelled', ['channel' => $notification->channel->value]);
+
         return new NotificationResource($notification->fresh());
     }
 
@@ -110,12 +114,17 @@ class NotificationController extends Controller
 
         abort_if($cancelled === 0, 422, 'No pending notifications found for this batch.');
 
+        Log::info('Batch cancelled', ['batch_id' => $batchId, 'count' => $cancelled]);
+
         return response()->json(['cancelled' => $cancelled]);
     }
 
     public function destroy(string $id): Response
     {
-        Notification::findOrFail($id)->delete();
+        $notification = Notification::findOrFail($id);
+        $notification->delete();
+
+        Log::info('Notification deleted', ['channel' => $notification->channel->value]);
 
         return response()->noContent();
     }

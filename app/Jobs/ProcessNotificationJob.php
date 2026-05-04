@@ -26,10 +26,15 @@ class ProcessNotificationJob implements ShouldQueue
         return [30, 60, 120];
     }
 
-    public function __construct(public readonly string $notificationId) {}
+    public function __construct(
+        public readonly string $notificationId,
+        public readonly ?string $correlationId = null,
+    ) {}
 
     public function handle(ExternalNotificationProvider $provider): void
     {
+        Log::withContext(['correlation_id' => $this->correlationId]);
+
         if ($this->batch()?->cancelled()) {
             return;
         }
