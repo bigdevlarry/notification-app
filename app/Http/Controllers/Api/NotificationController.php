@@ -49,9 +49,15 @@ class NotificationController extends Controller
             ->setStatusCode(HttpResponse::HTTP_CREATED);
     }
 
-    public function show(string $id): NotificationResource
+    public function show(string $id): JsonResponse|NotificationResource
     {
-        return new NotificationResource(Notification::findOrFail($id));
+        $notification = Notification::find($id);
+
+        if ($notification === null) {
+            return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
+        }
+
+        return new NotificationResource($notification);
     }
 
     public function storeBatch(StoreBatchNotificationRequest $request): JsonResponse
@@ -67,23 +73,31 @@ class NotificationController extends Controller
         ], HttpResponse::HTTP_CREATED);
     }
 
-    public function status(NotificationStatusRequest $request): NotificationCollection
+    public function status(NotificationStatusRequest $request): JsonResponse|NotificationCollection
     {
         $notifications = $this->service->getStatus($request->validated());
 
-        abort_if($notifications->isEmpty(), HttpResponse::HTTP_NOT_FOUND);
+        if ($notifications->isEmpty()) {
+            return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
+        }
 
         return new NotificationCollection($notifications);
     }
 
-    public function cancel(string $id): NotificationResource
+    public function cancel(string $id): JsonResponse|NotificationResource
     {
-        $notification = Notification::findOrFail($id);
+        $notification = Notification::find($id);
 
-        abort_if(!$notification->canBeCancelled(),
-            HttpResponse::HTTP_UNPROCESSABLE_ENTITY,
-            'Only pending notifications can be cancelled.'
-        );
+        if ($notification === null) {
+            return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
+        }
+
+        if (!$notification->canBeCancelled()) {
+            return response()->json(
+                ['message' => 'Only pending notifications can be cancelled.'],
+                HttpResponse::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
 
         $notification->markAsCancelled();
 
@@ -100,19 +114,26 @@ class NotificationController extends Controller
             ->each(fn ($n) => $n->markAsCancelled())
             ->count();
 
-        abort_if($cancelled === 0,
-            HttpResponse::HTTP_UNPROCESSABLE_ENTITY,
-            'No pending notifications found for this batch.'
-        );
+        if ($cancelled === 0) {
+            return response()->json(
+                ['message' => 'No pending notifications found for this batch.'],
+                HttpResponse::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
 
         Log::info('Batch cancelled', ['batch_id' => $batchId, 'count' => $cancelled]);
 
         return response()->json(['cancelled' => $cancelled]);
     }
 
-    public function destroy(string $id): Response
+    public function destroy(string $id): JsonResponse|Response
     {
-        $notification = Notification::findOrFail($id);
+        $notification = Notification::find($id);
+
+        if ($notification === null) {
+            return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
+        }
+
         $notification->delete();
 
         Log::info('Notification deleted', ['channel' => $notification->channel->value]);

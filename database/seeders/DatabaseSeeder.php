@@ -9,6 +9,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create(['id' => 1]);
+        if (User::find(1) === null) {
+            User::factory()->create(['id' => 1]);
+        }
     }
 }
