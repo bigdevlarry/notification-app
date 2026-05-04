@@ -4,11 +4,18 @@ namespace Tests\Feature;
 
 use App\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class ObservabilityTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Cache::forget('metrics');
+    }
 
     public function test_health_check_returns_ok_when_database_is_up(): void
     {

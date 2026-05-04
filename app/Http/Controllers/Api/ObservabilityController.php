@@ -54,8 +54,8 @@ class ObservabilityController extends Controller
             $cancelled = $counts->get(NotificationStatus::Cancelled->value, 0);
 
             $avgLatencyMs = Notification::whereNotNull('sent_at')
-                ->selectRaw('AVG(EXTRACT(EPOCH FROM (sent_at - created_at)) * 1000) as avg_ms')
-                ->value('avg_ms');
+                ->get(['sent_at', 'created_at'])
+                ->avg(fn ($n) => $n->created_at->diffInMilliseconds($n->sent_at));
 
             $queueDepth = DB::table('jobs')
                 ->selectRaw('queue, COUNT(*) as depth')
