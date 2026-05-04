@@ -6,9 +6,9 @@ use App\Enums\NotificationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 class ObservabilityController extends Controller
 {
@@ -27,15 +27,15 @@ class ObservabilityController extends Controller
             $queueDepth = null;
         }
 
-        $threshold   = config('observability.queue_threshold', 1000);
+        $threshold = config('observability.queue_threshold', 1000);
         $queueStatus = $queueDepth !== null && $queueDepth <= $threshold ? 'ok' : 'backlogged';
-        $status      = $dbStatus === 'ok' && $queueStatus === 'ok' ? 'ok' : 'degraded';
+        $status = $dbStatus === 'ok' && $queueStatus === 'ok' ? 'ok' : 'degraded';
 
         return response()->json([
             'status' => $status,
             'checks' => [
                 'database' => $dbStatus,
-                'queue'    => $queueStatus,
+                'queue' => $queueStatus,
             ],
         ], $status === 'ok' ? Response::HTTP_OK : Response::HTTP_SERVICE_UNAVAILABLE);
     }
@@ -47,10 +47,10 @@ class ObservabilityController extends Controller
                 ->groupBy('status')
                 ->pluck('count', 'status');
 
-            $total     = $counts->sum();
-            $sent      = $counts->get(NotificationStatus::Sent->value, 0);
-            $failed    = $counts->get(NotificationStatus::Failed->value, 0);
-            $pending   = $counts->get(NotificationStatus::Pending->value, 0);
+            $total = $counts->sum();
+            $sent = $counts->get(NotificationStatus::Sent->value, 0);
+            $failed = $counts->get(NotificationStatus::Failed->value, 0);
+            $pending = $counts->get(NotificationStatus::Pending->value, 0);
             $cancelled = $counts->get(NotificationStatus::Cancelled->value, 0);
 
             $avgLatencyMs = Notification::whereNotNull('sent_at')
@@ -64,11 +64,11 @@ class ObservabilityController extends Controller
 
             return [
                 'notifications' => [
-                    'total'        => $total,
-                    'pending'      => $pending,
-                    'sent'         => $sent,
-                    'failed'       => $failed,
-                    'cancelled'    => $cancelled,
+                    'total' => $total,
+                    'pending' => $pending,
+                    'sent' => $sent,
+                    'failed' => $failed,
+                    'cancelled' => $cancelled,
                     'success_rate' => $total > 0 ? round($sent / $total * 100, 2) : 0,
                     'failure_rate' => $total > 0 ? round($failed / $total * 100, 2) : 0,
                 ],

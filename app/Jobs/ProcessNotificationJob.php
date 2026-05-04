@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class ProcessNotificationJob implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels, SendsNotifications;
+    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SendsNotifications, SerializesModels;
 
     public int $tries = 3;
 
@@ -49,6 +49,7 @@ class ProcessNotificationJob implements ShouldQueue
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, 100)) {
             $this->release(30);
+
             return;
         }
 

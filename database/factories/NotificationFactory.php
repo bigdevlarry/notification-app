@@ -16,19 +16,19 @@ class NotificationFactory extends Factory
     public function definition(): array
     {
         return [
-            'recipient_id'    => User::factory(),
+            'recipient_id' => User::factory(),
             'idempotency_key' => $this->faker->uuid(),
-            'channel'         => $this->faker->randomElement([NotificationChannel::Mail, NotificationChannel::Sms, NotificationChannel::Push]),
-            'content'         => $this->faker->sentence(),
-            'priority'        => $this->faker->randomElement(NotificationPriority::cases()),
-            'status'          => NotificationStatus::Pending,
+            'channel' => $this->faker->randomElement([NotificationChannel::Mail, NotificationChannel::Sms, NotificationChannel::Push]),
+            'content' => $this->faker->sentence(),
+            'priority' => $this->faker->randomElement(NotificationPriority::cases()),
+            'status' => NotificationStatus::Pending,
         ];
     }
 
     public function sent(): static
     {
         return $this->state(fn () => [
-            'status'  => NotificationStatus::Sent,
+            'status' => NotificationStatus::Sent,
             'sent_at' => now(),
         ]);
     }
@@ -36,8 +36,8 @@ class NotificationFactory extends Factory
     public function failed(): static
     {
         return $this->state(fn () => [
-            'status'         => NotificationStatus::Failed,
-            'failed_at'      => now(),
+            'status' => NotificationStatus::Failed,
+            'failed_at' => now(),
             'failure_reason' => $this->faker->sentence(),
         ]);
     }
@@ -52,7 +52,7 @@ class NotificationFactory extends Factory
     public function cancelled(): static
     {
         return $this->state(fn () => [
-            'status'       => NotificationStatus::Cancelled,
+            'status' => NotificationStatus::Cancelled,
             'cancelled_at' => now(),
         ]);
     }

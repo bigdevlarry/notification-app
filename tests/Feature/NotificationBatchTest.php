@@ -17,6 +17,7 @@ class NotificationBatchTest extends TestCase
     use RefreshDatabase;
 
     private User $recipient;
+
     private string $base = '/api/v1/notifications';
 
     protected function setUp(): void
@@ -33,9 +34,9 @@ class NotificationBatchTest extends TestCase
         $response = $this->postJson("{$this->base}/batch", [
             'notifications' => array_map(fn ($i) => [
                 'recipient_id' => $this->recipient->id,
-                'channel'      => NotificationChannel::Mail->value,
-                'content'      => "Batch notification {$i}.",
-                'priority'     => NotificationPriority::Normal->value,
+                'channel' => NotificationChannel::Mail->value,
+                'content' => "Batch notification {$i}.",
+                'priority' => NotificationPriority::Normal->value,
             ], range(0, 2)),
         ]);
 
@@ -56,7 +57,7 @@ class NotificationBatchTest extends TestCase
 
         Notification::factory()->count(3)->create([
             'batch_id' => $batchId,
-            'status'   => NotificationStatus::Pending,
+            'status' => NotificationStatus::Pending,
         ]);
 
         $response = $this->patchJson("{$this->base}/batch/{$batchId}/cancel");

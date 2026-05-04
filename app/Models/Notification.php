@@ -12,23 +12,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * @property string                   $id
- * @property string|null              $batch_id
- * @property string                   $idempotency_key
- * @property int                      $recipient_id
- * @property string|null              $recipient_address
- * @property NotificationChannel      $channel
- * @property string                   $content
- * @property NotificationPriority     $priority
- * @property NotificationStatus       $status
- * @property Carbon|null              $read_at
- * @property Carbon|null              $sent_at
- * @property Carbon|null              $failed_at
- * @property string|null              $failure_reason
- * @property Carbon|null              $cancelled_at
- * @property string|null              $provider_message_id
- * @property Carbon                   $created_at
- * @property Carbon                   $updated_at
+ * @property string $id
+ * @property string|null $batch_id
+ * @property string $idempotency_key
+ * @property int $recipient_id
+ * @property string|null $recipient_address
+ * @property NotificationChannel $channel
+ * @property string $content
+ * @property NotificationPriority $priority
+ * @property NotificationStatus $status
+ * @property Carbon|null $read_at
+ * @property Carbon|null $sent_at
+ * @property Carbon|null $failed_at
+ * @property string|null $failure_reason
+ * @property Carbon|null $cancelled_at
+ * @property string|null $provider_message_id
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class Notification extends Model
 {
@@ -51,11 +51,11 @@ class Notification extends Model
     ];
 
     protected $casts = [
-        'channel'      => NotificationChannel::class,
-        'priority'     => NotificationPriority::class,
-        'status'       => NotificationStatus::class,
-        'sent_at'      => 'datetime',
-        'failed_at'    => 'datetime',
+        'channel' => NotificationChannel::class,
+        'priority' => NotificationPriority::class,
+        'status' => NotificationStatus::class,
+        'sent_at' => 'datetime',
+        'failed_at' => 'datetime',
         'cancelled_at' => 'datetime',
     ];
 
@@ -72,8 +72,8 @@ class Notification extends Model
     public function markAsSent(?string $providerMessageId = null): void
     {
         $this->update([
-            'status'              => NotificationStatus::Sent,
-            'sent_at'             => now(),
+            'status' => NotificationStatus::Sent,
+            'sent_at' => now(),
             'provider_message_id' => $providerMessageId,
         ]);
     }
@@ -81,8 +81,8 @@ class Notification extends Model
     public function markAsFailed(string $reason): void
     {
         $this->update([
-            'status'         => NotificationStatus::Failed,
-            'failed_at'      => now(),
+            'status' => NotificationStatus::Failed,
+            'failed_at' => now(),
             'failure_reason' => $reason,
         ]);
     }
@@ -120,6 +120,6 @@ class Notification extends Model
     public function scopeCreatedBetween($query, ?string $from, ?string $to): void
     {
         $query->when($from, fn ($q) => $q->whereDate('created_at', '>=', $from))
-              ->when($to,   fn ($q) => $q->whereDate('created_at', '<=', $to));
+            ->when($to, fn ($q) => $q->whereDate('created_at', '<=', $to));
     }
 }

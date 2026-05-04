@@ -16,6 +16,7 @@ class NotificationTest extends TestCase
     use RefreshDatabase;
 
     private User $recipient;
+
     private string $base = '/api/v1/notifications';
 
     protected function setUp(): void
@@ -38,7 +39,7 @@ class NotificationTest extends TestCase
             'content',
             'priority',
             'status',
-            'created_at']
+            'created_at'],
         ]);
         $response->assertJsonPath('data.status', NotificationStatus::Pending->value);
     }
@@ -116,9 +117,9 @@ class NotificationTest extends TestCase
     {
         return array_merge([
             'recipient_id' => $this->recipient->id,
-            'channel'      => NotificationChannel::Mail->value,
-            'content'      => 'Your order has been shipped.',
-            'priority'     => NotificationPriority::High->value,
+            'channel' => NotificationChannel::Mail->value,
+            'content' => 'Your order has been shipped.',
+            'priority' => NotificationPriority::High->value,
         ], $overrides);
     }
 }

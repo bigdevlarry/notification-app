@@ -14,7 +14,7 @@ class NotificationStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id'       => ['required_without:batch_id', 'string'],
+            'id' => ['required_without:batch_id', 'string'],
             'batch_id' => ['required_without:id', 'string'],
         ];
     }

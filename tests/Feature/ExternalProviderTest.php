@@ -28,22 +28,21 @@ class ExternalProviderTest extends TestCase
         Http::fake([
             'webhook.site/*' => Http::response([
                 'messageId' => 'msg-uuid-123',
-                'status'    => 'accepted',
+                'status' => 'accepted',
                 'timestamp' => now()->toIso8601String(),
             ], 202),
         ]);
 
         $notification = Notification::factory()->create([
-            'channel'           => NotificationChannel::Sms,
+            'channel' => NotificationChannel::Sms,
             'recipient_address' => '+905551234567',
-            'status'            => NotificationStatus::Pending,
+            'status' => NotificationStatus::Pending,
         ]);
 
         ProcessNotificationJob::dispatch($notification->id);
 
-        Http::assertSent(fn (Request $request) =>
-            $request->url() === 'https://webhook.site/test-uuid' &&
-            $request['to']      === '+905551234567' &&
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://webhook.site/test-uuid' &&
+            $request['to'] === '+905551234567' &&
             $request['channel'] === 'sms' &&
             $request['content'] === $notification->content
         );
@@ -60,9 +59,9 @@ class ExternalProviderTest extends TestCase
         ]);
 
         $notification = Notification::factory()->create([
-            'channel'           => NotificationChannel::Sms,
+            'channel' => NotificationChannel::Sms,
             'recipient_address' => '+905551234567',
-            'status'            => NotificationStatus::Pending,
+            'status' => NotificationStatus::Pending,
         ]);
 
         $this->expectException(\RuntimeException::class);

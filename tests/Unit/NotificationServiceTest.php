@@ -22,7 +22,7 @@ class NotificationServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new NotificationService();
+        $this->service = new NotificationService;
     }
 
     public function test_create_persists_notification_and_dispatches_job_on_correct_queue(): void
@@ -33,14 +33,14 @@ class NotificationServiceTest extends TestCase
 
         $this->service->create([
             'recipient_id' => $recipient->id,
-            'channel'      => NotificationChannel::Mail->value,
-            'content'      => 'Hello.',
-            'priority'     => NotificationPriority::High->value,
+            'channel' => NotificationChannel::Mail->value,
+            'content' => 'Hello.',
+            'priority' => NotificationPriority::High->value,
         ]);
 
         $this->assertDatabaseHas('notifications', [
             'recipient_id' => $recipient->id,
-            'content'      => 'Hello.',
+            'content' => 'Hello.',
         ]);
 
         Queue::assertPushedOn('notifications-high', ProcessNotificationJob::class);
@@ -54,12 +54,12 @@ class NotificationServiceTest extends TestCase
 
         $payload = [
             'recipient_id' => $recipient->id,
-            'channel'      => NotificationChannel::Mail->value,
-            'content'      => 'Once.',
-            'priority'     => NotificationPriority::Normal->value,
+            'channel' => NotificationChannel::Mail->value,
+            'content' => 'Once.',
+            'priority' => NotificationPriority::Normal->value,
         ];
 
-        $first  = $this->service->create($payload);
+        $first = $this->service->create($payload);
         $second = $this->service->create($payload);
 
         $this->assertEquals($first->id, $second->id);
@@ -76,15 +76,15 @@ class NotificationServiceTest extends TestCase
         $batchId = $this->service->createBatch([
             [
                 'recipient_id' => $recipient->id,
-                'channel'      => NotificationChannel::Mail->value,
-                'content'      => 'First.',
-                'priority'     => NotificationPriority::Low->value,
+                'channel' => NotificationChannel::Mail->value,
+                'content' => 'First.',
+                'priority' => NotificationPriority::Low->value,
             ],
             [
                 'recipient_id' => $recipient->id,
-                'channel'      => NotificationChannel::Mail->value,
-                'content'      => 'Second.',
-                'priority'     => NotificationPriority::High->value,
+                'channel' => NotificationChannel::Mail->value,
+                'content' => 'Second.',
+                'priority' => NotificationPriority::High->value,
             ],
         ]);
 

@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\NotificationStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreBatchNotificationRequest;
 use App\Http\Requests\NotificationStatusRequest;
+use App\Http\Requests\StoreBatchNotificationRequest;
 use App\Http\Requests\StoreNotificationRequest;
 use App\Http\Resources\NotificationCollection;
 use App\Http\Resources\NotificationResource;
 use App\Models\Notification;
-use App\Enums\NotificationStatus;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,14 +25,11 @@ class NotificationController extends Controller
     {
         $query = Notification::query()
             ->latest()
-            ->when($request->filled('status'), fn ($q) =>
-                $q->byStatus($request->string('status'))
+            ->when($request->filled('status'), fn ($q) => $q->byStatus($request->string('status'))
             )
-            ->when($request->filled('channel'), fn ($q) =>
-                $q->byChannel($request->string('channel'))
+            ->when($request->filled('channel'), fn ($q) => $q->byChannel($request->string('channel'))
             )
-            ->when($request->hasAny(['from', 'to']), fn ($q) =>
-                $q->createdBetween($request->input('from'), $request->input('to'))
+            ->when($request->hasAny(['from', 'to']), fn ($q) => $q->createdBetween($request->input('from'), $request->input('to'))
             );
 
         return new NotificationCollection(
@@ -68,8 +65,8 @@ class NotificationController extends Controller
 
         return response()->json([
             'batch_id' => $batchId,
-            'count'    => count($notifications),
-            'status'   => 'queued',
+            'count' => count($notifications),
+            'status' => 'queued',
         ], HttpResponse::HTTP_CREATED);
     }
 
@@ -92,7 +89,7 @@ class NotificationController extends Controller
             return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
         }
 
-        if (!$notification->canBeCancelled()) {
+        if (! $notification->canBeCancelled()) {
             return response()->json(
                 ['message' => 'Only pending notifications can be cancelled.'],
                 HttpResponse::HTTP_UNPROCESSABLE_ENTITY

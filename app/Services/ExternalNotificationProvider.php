@@ -9,7 +9,7 @@ class ExternalNotificationProvider
     public function send(string $to, string $channel, string $content): string
     {
         $response = Http::post(config('services.notification_provider.url'), [
-            'to'      => $to,
+            'to' => $to,
             'channel' => $channel,
             'content' => $content,
         ]);
