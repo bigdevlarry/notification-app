@@ -42,8 +42,7 @@ class ExternalProviderTest extends TestCase
         app(ProcessNotificationJob::class, ['notificationId' => $notification->id])
             ->handle(app(ExternalNotificationProvider::class));
 
-        Http::assertSent(fn (Request $request) =>
-            $request['to'] === '+905551234567' &&
+        Http::assertSent(fn (Request $request) => $request['to'] === '+905551234567' &&
             $request['channel'] === 'sms' &&
             $request['content'] === $notification->content
         );
