@@ -21,7 +21,6 @@ use Illuminate\Support\Carbon;
  * @property string $content
  * @property NotificationPriority $priority
  * @property NotificationStatus $status
- * @property Carbon|null $read_at
  * @property Carbon|null $sent_at
  * @property Carbon|null $failed_at
  * @property string|null $failure_reason

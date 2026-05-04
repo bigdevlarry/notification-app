@@ -47,7 +47,9 @@ class ProcessNotificationJob implements ShouldQueue
 
         $rateLimitKey = "channel:{$notification->channel->value}";
 
-        if (RateLimiter::tooManyAttempts($rateLimitKey, 100)) {
+        $rateLimit = config("notifications.rate_limits.{$notification->channel->value}", 100);
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $rateLimit)) {
             $this->release(30);
 
             return;

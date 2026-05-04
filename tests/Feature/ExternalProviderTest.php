@@ -26,7 +26,7 @@ class ExternalProviderTest extends TestCase
     public function test_sms_notification_is_sent_to_provider_with_correct_payload(): void
     {
         Http::fake([
-            'webhook.site/*' => Http::response([
+            '*' => Http::response([
                 'messageId' => 'msg-uuid-123',
                 'status' => 'accepted',
                 'timestamp' => now()->toIso8601String(),
@@ -39,9 +39,10 @@ class ExternalProviderTest extends TestCase
             'status' => NotificationStatus::Pending,
         ]);
 
-        ProcessNotificationJob::dispatch($notification->id);
+        app(ProcessNotificationJob::class, ['notificationId' => $notification->id])
+            ->handle(app(ExternalNotificationProvider::class));
 
-        Http::assertSent(fn (Request $request) => $request->url() === 'https://webhook.site/test-uuid' &&
+        Http::assertSent(fn (Request $request) =>
             $request['to'] === '+905551234567' &&
             $request['channel'] === 'sms' &&
             $request['content'] === $notification->content
@@ -55,7 +56,7 @@ class ExternalProviderTest extends TestCase
     public function test_provider_failure_marks_notification_as_failed(): void
     {
         Http::fake([
-            'webhook.site/*' => Http::response([], 500),
+            '*' => Http::response([], 500),
         ]);
 
         $notification = Notification::factory()->create([

@@ -42,13 +42,6 @@ class NotificationFactory extends Factory
         ]);
     }
 
-    public function read(): static
-    {
-        return $this->state(fn () => [
-            'read_at' => now(),
-        ]);
-    }
-
     public function cancelled(): static
     {
         return $this->state(fn () => [

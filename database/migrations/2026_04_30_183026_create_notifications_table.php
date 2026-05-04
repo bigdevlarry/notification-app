@@ -23,7 +23,6 @@ return new class extends Migration
             $table->string('status')->default('pending');
             $table->string('provider_message_id')->nullable();
             $table->text('failure_reason')->nullable();
-            $table->timestamp('read_at')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->timestamp('failed_at')->nullable();
             $table->timestamp('cancelled_at')->nullable();
@@ -34,7 +33,6 @@ return new class extends Migration
             $table->index('channel');
             $table->index('priority');
             $table->index('created_at');
-            $table->index(['recipient_id', 'read_at'], 'notifications_recipient_unread_index');
         });
     }
 

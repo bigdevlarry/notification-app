@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class NotificationController extends Controller
@@ -48,7 +49,7 @@ class NotificationController extends Controller
 
     public function show(string $id): JsonResponse|NotificationResource
     {
-        $notification = Notification::find($id);
+        $notification = Str::isUuid($id) ? Notification::find($id) : null;
 
         if ($notification === null) {
             return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
@@ -83,7 +84,7 @@ class NotificationController extends Controller
 
     public function cancel(string $id): JsonResponse|NotificationResource
     {
-        $notification = Notification::find($id);
+        $notification = Str::isUuid($id) ? Notification::find($id) : null;
 
         if ($notification === null) {
             return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
@@ -125,7 +126,7 @@ class NotificationController extends Controller
 
     public function destroy(string $id): JsonResponse|Response
     {
-        $notification = Notification::find($id);
+        $notification = Str::isUuid($id) ? Notification::find($id) : null;
 
         if ($notification === null) {
             return response()->json(['message' => 'Not found.'], HttpResponse::HTTP_NOT_FOUND);
