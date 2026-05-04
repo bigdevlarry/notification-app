@@ -53,6 +53,7 @@ There's an OpenAPI spec available at docs/openapi.yaml.
 All responses include an `X-Correlation-ID` header. You can pass your own value in the request header or one will be generated automatically.
 
 ### Create a notification
+NOTE: Recipient_id is always 1. Seeder has a single user setup
 
 ```
 POST /notifications
