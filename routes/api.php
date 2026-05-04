@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ObservabilityController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::prefix('v1')->group(function () {
+    Route::get('health', [ObservabilityController::class, 'health'])->name('health');
+    Route::get('metrics', [ObservabilityController::class, 'metrics'])->name('metrics');
+
     Route::post('notifications/batch', [NotificationController::class, 'storeBatch'])->name('notifications.batch.store');
     Route::patch('notifications/batch/{batchId}/cancel', [NotificationController::class, 'cancelBatch'])->name('notifications.batch.cancel');
     Route::get('notifications/status', [NotificationController::class, 'status'])->name('notifications.status');
