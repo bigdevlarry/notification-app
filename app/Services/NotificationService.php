@@ -34,9 +34,60 @@ class NotificationService
             ProcessNotificationJob::dispatch($notification->id)
                 ->onQueue($this->resolveQueue($priority))
                 ->afterCommit();
+        } else {
+            Log::info('Duplicate notification, skipping dispatch', ['channel' => $data['channel']]);
         }
 
         return $notification;
+    }
+
+    public function createBatch(array $notifications): string
+    {
+        if (count($notifications) > 1000) {
+            throw new \InvalidArgumentException('Max 1000 notifications per batch.');
+        }
+
+        $batchId = (string) Str::uuid();
+
+        try {
+            $created = DB::transaction(function () use ($notifications, $batchId) {
+                return collect($notifications)->map(fn ($data) => Notification::firstOrCreate(
+                    ['idempotency_key' => $this->generateIdempotencyKey($data)],
+                    [
+                        'batch_id'          => $batchId,
+                        'recipient_id'      => $data['recipient_id'],
+                        'recipient_address' => $data['recipient_address'] ?? null,
+                        'channel'           => $data['channel'],
+                        'content'           => $data['content'],
+                        'priority'          => NotificationPriority::from($data['priority'])->value,
+                        'status'            => NotificationStatus::Pending->value,
+                    ]
+                ));
+            });
+        } catch (\Throwable $e) {
+            Log::error('Failed to create notification batch', [
+                'batch_id' => $batchId,
+                'error'    => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+
+        $created->groupBy(fn ($n) => $n->priority->value)
+            ->each(function ($group, $priorityValue) use ($batchId) {
+                $queue = $this->resolveQueue(NotificationPriority::from($priorityValue));
+
+                Bus::batch(
+                    $group->map(fn ($n) => new ProcessNotificationJob($n->id))->all()
+                )
+                ->onQueue($queue)
+                ->then(fn () => Log::info('Batch completed', ['batch_id' => $batchId, 'queue' => $queue]))
+                ->catch(fn (\Throwable $e) => Log::error('Batch failed', ['batch_id' => $batchId, 'message' => $e->getMessage()]))
+                ->allowFailures()
+                ->dispatch();
+            });
+
+        return $batchId;
     }
 
     public function getStatus(array $data): Collection
@@ -45,7 +96,7 @@ class NotificationService
             return Notification::where('id', $data['id'])->get();
         }
 
-        return Notification::forBatch($data['batch_id'])->get();
+        return Notification::where('batch_id', $data['batch_id'])->get();
     }
 
     private function generateIdempotencyKey(array $data): string

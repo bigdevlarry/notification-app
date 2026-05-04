@@ -14,6 +14,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class NotificationController extends Controller
 {
@@ -68,11 +69,13 @@ class NotificationController extends Controller
 
     public function storeBatch(StoreBatchNotificationRequest $request): JsonResponse
     {
-        $batchId = $this->service->createBatch($request->validated('notifications'));
+        $notifications = $request->validated('notifications');
+
+        $batchId = $this->service->createBatch($notifications);
 
         return response()->json([
             'batch_id' => $batchId,
-            'count'    => count($request->validated('notifications')),
+            'count'    => count($notifications),
             'status'   => 'queued',
         ], 201);
     }

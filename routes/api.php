@@ -20,6 +20,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::prefix('v1')->group(function () {
+    Route::post('notifications/batch', [NotificationController::class, 'storeBatch'])->name('notifications.batch.store');
+    Route::patch('notifications/batch/{batchId}/cancel', [NotificationController::class, 'cancelBatch'])->name('notifications.batch.cancel');
+    Route::get('notifications/status', [NotificationController::class, 'status'])->name('notifications.status');
+
     Route::apiResource('notifications', NotificationController::class)
         ->only(['index', 'store', 'show', 'destroy']);
 
