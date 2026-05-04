@@ -31,4 +31,7 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'notification_provider' => [
+        'url' => env('NOTIFICATION_PROVIDER_URL'),
+    ],
 ];
