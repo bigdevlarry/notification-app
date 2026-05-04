@@ -43,7 +43,6 @@ class Notification extends Model
         'content',
         'priority',
         'status',
-        'read_at',
         'sent_at',
         'failed_at',
         'failure_reason',
@@ -55,7 +54,6 @@ class Notification extends Model
         'channel'      => NotificationChannel::class,
         'priority'     => NotificationPriority::class,
         'status'       => NotificationStatus::class,
-        'read_at'      => 'datetime',
         'sent_at'      => 'datetime',
         'failed_at'    => 'datetime',
         'cancelled_at' => 'datetime',
@@ -87,13 +85,6 @@ class Notification extends Model
             'failed_at'      => now(),
             'failure_reason' => $reason,
         ]);
-    }
-
-    public function markAsRead(): void
-    {
-        if (is_null($this->read_at)) {
-            $this->update(['read_at' => now()]);
-        }
     }
 
     public function canBeCancelled(): bool

@@ -31,6 +31,5 @@ Route::prefix('v1')->group(function () {
     Route::apiResource('notifications', NotificationController::class)
         ->only(['index', 'store', 'show', 'destroy']);
 
-    Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::patch('notifications/{id}/cancel', [NotificationController::class, 'cancel'])->name('notifications.cancel');
 });

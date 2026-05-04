@@ -21,8 +21,6 @@ class NotificationResource extends JsonResource
             'content'             => $this->content,
             'priority'            => $this->priority->value,
             'status'              => $this->status->value,
-            'read'                => ! is_null($this->read_at),
-            'read_at'             => $this->read_at,
             'sent_at'             => $this->sent_at,
             'failed_at'           => $this->failed_at,
             'failure_reason'      => $this->failure_reason,

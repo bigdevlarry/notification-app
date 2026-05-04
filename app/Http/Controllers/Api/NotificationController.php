@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class NotificationController extends Controller
 {
@@ -24,17 +25,11 @@ class NotificationController extends Controller
     {
         $query = Notification::query()
             ->latest()
-            ->when($request->filled('recipient_id'), fn ($q) =>
-                $q->forRecipient($request->integer('recipient_id'))
-            )
             ->when($request->filled('status'), fn ($q) =>
                 $q->byStatus($request->string('status'))
             )
             ->when($request->filled('channel'), fn ($q) =>
                 $q->byChannel($request->string('channel'))
-            )
-            ->when($request->filled('priority'), fn ($q) =>
-                $q->byPriority($request->string('priority'))
             )
             ->when($request->hasAny(['from', 'to']), fn ($q) =>
                 $q->createdBetween($request->input('from'), $request->input('to'))
@@ -51,22 +46,12 @@ class NotificationController extends Controller
 
         return (new NotificationResource($notification))
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode(HttpResponse::HTTP_CREATED);
     }
 
     public function show(string $id): NotificationResource
     {
         return new NotificationResource(Notification::findOrFail($id));
-    }
-
-    public function markAsRead(string $id): NotificationResource
-    {
-        $notification = Notification::findOrFail($id);
-        $notification->markAsRead();
-
-        Log::info('Notification marked as read', ['channel' => $notification->channel->value]);
-
-        return new NotificationResource($notification->fresh());
     }
 
     public function storeBatch(StoreBatchNotificationRequest $request): JsonResponse
@@ -79,14 +64,14 @@ class NotificationController extends Controller
             'batch_id' => $batchId,
             'count'    => count($notifications),
             'status'   => 'queued',
-        ], 201);
+        ], HttpResponse::HTTP_CREATED);
     }
 
     public function status(NotificationStatusRequest $request): NotificationCollection
     {
         $notifications = $this->service->getStatus($request->validated());
 
-        abort_if($notifications->isEmpty(), 404);
+        abort_if($notifications->isEmpty(), HttpResponse::HTTP_NOT_FOUND);
 
         return new NotificationCollection($notifications);
     }
@@ -95,7 +80,10 @@ class NotificationController extends Controller
     {
         $notification = Notification::findOrFail($id);
 
-        abort_if(! $notification->canBeCancelled(), 422, 'Only pending notifications can be cancelled.');
+        abort_if(!$notification->canBeCancelled(),
+            HttpResponse::HTTP_UNPROCESSABLE_ENTITY,
+            'Only pending notifications can be cancelled.'
+        );
 
         $notification->markAsCancelled();
 
@@ -112,7 +100,10 @@ class NotificationController extends Controller
             ->each(fn ($n) => $n->markAsCancelled())
             ->count();
 
-        abort_if($cancelled === 0, 422, 'No pending notifications found for this batch.');
+        abort_if($cancelled === 0,
+            HttpResponse::HTTP_UNPROCESSABLE_ENTITY,
+            'No pending notifications found for this batch.'
+        );
 
         Log::info('Batch cancelled', ['batch_id' => $batchId, 'count' => $cancelled]);
 

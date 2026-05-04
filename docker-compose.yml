@@ -1,0 +1,90 @@
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: insider_one
+      DB_USERNAME: insider
+      DB_PASSWORD: secret
+      QUEUE_CONNECTION: database
+      CACHE_DRIVER: file
+      MAIL_MAILER: log
+      NOTIFICATION_PROVIDER_URL: ${NOTIFICATION_PROVIDER_URL}
+      QUEUE_DEPTH_THRESHOLD: ${QUEUE_DEPTH_THRESHOLD:-1000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      APP_ENV: local
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: insider_one
+      DB_USERNAME: insider
+      DB_PASSWORD: secret
+      QUEUE_CONNECTION: database
+      MAIL_MAILER: log
+      NOTIFICATION_PROVIDER_URL: ${NOTIFICATION_PROVIDER_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    entrypoint: []
+    command: sh -c "sleep 10 && php artisan queue:work --queue=notifications-high,notifications-normal,notifications-low --tries=3"
+
+  test:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      APP_ENV: testing
+      APP_KEY: ${APP_KEY}
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    entrypoint: []
+    command: php artisan test --parallel
+    profiles:
+      - test
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: insider_one
+      POSTGRES_USER: insider
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U insider -d insider_one"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
