@@ -1,0 +1,554 @@
+openapi: 3.0.3
+
+info:
+  title: Insider Notification API
+  version: 1.0.0
+  description: |
+    Multi-channel notification service supporting mail, SMS, and push delivery.
+    Notifications are processed asynchronously via priority queues (high / normal / low).
+
+    All responses include an `X-Correlation-ID` header for request tracing.
+    Clients may send their own value; if omitted, one is generated automatically.
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development
+
+tags:
+  - name: Notifications
+    description: Single notification operations
+  - name: Batch
+    description: Bulk notification operations
+  - name: Observability
+    description: Health and metrics endpoints
+
+paths:
+
+  /health:
+    get:
+      tags: [Observability]
+      summary: Health check
+      responses:
+        '200':
+          description: System healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: System degraded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /metrics:
+    get:
+      tags: [Observability]
+      summary: Real-time metrics
+      responses:
+        '200':
+          description: Current system metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      description: Returns a paginated list of notifications. All filters are optional and combinable.
+      parameters:
+        - { $ref: '#/components/parameters/RecipientId' }
+        - { $ref: '#/components/parameters/Status' }
+        - { $ref: '#/components/parameters/Channel' }
+        - { $ref: '#/components/parameters/Priority' }
+        - { $ref: '#/components/parameters/From' }
+        - { $ref: '#/components/parameters/To' }
+        - { $ref: '#/components/parameters/PerPage' }
+      responses:
+        '200':
+          description: Paginated list of notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCollection'
+
+    post:
+      tags: [Notifications]
+      summary: Create a notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreNotificationRequest'
+            examples:
+              mail:
+                summary: Mail notification
+                value:
+                  recipient_id: 1
+                  channel: mail
+                  content: Your order has been shipped.
+                  priority: high
+              sms:
+                summary: SMS notification
+                value:
+                  recipient_id: 1
+                  channel: sms
+                  content: Your verification code is 4821.
+                  priority: high
+                  recipient_address: "+905551234567"
+              idempotent:
+                summary: With idempotency key
+                value:
+                  recipient_id: 1
+                  channel: mail
+                  content: Password reset requested.
+                  priority: normal
+                  idempotency_key: pwd-reset-user-1-2026-04-30
+      responses:
+        '201':
+          description: Notification created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /notifications/{notificationId}:
+    get:
+      tags: [Notifications]
+      summary: Get a notification
+      parameters:
+        - { $ref: '#/components/parameters/NotificationId' }
+      responses:
+        '200':
+          description: Notification found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Notifications]
+      summary: Delete a notification
+      parameters:
+        - { $ref: '#/components/parameters/NotificationId' }
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{notificationId}/cancel:
+    patch:
+      tags: [Notifications]
+      summary: Cancel a pending notification
+      description: Only notifications with status `pending` can be cancelled.
+      parameters:
+        - { $ref: '#/components/parameters/NotificationId' }
+      responses:
+        '200':
+          description: Notification cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Notification is not in a cancellable state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Only pending notifications can be cancelled.
+
+  /notifications/status:
+    get:
+      tags: [Notifications]
+      summary: Query notification status
+      description: Look up a single notification by `id` or all notifications belonging to a `batch_id`. Exactly one parameter is required.
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          example: 018e1234-abcd-7000-beef-000000000001
+        - name: batch_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          example: 018e1234-abcd-7000-beef-000000000002
+      responses:
+        '200':
+          description: Matching notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCollection'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /notifications/batch:
+    post:
+      tags: [Batch]
+      summary: Create a batch of notifications
+      description: Accepts up to 1000 notifications in a single request. All are queued atomically under the same `batch_id`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreBatchRequest'
+            example:
+              notifications:
+                - recipient_id: 1
+                  channel: database
+                  content: Your order has been shipped.
+                  priority: high
+                - recipient_id: 2
+                  channel: sms
+                  content: Flash sale — 50% off today only!
+                  priority: normal
+                  recipient_address: "+905559876543"
+      responses:
+        '201':
+          description: Batch accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /notifications/batch/{batchId}/cancel:
+    patch:
+      tags: [Batch]
+      summary: Cancel all pending notifications in a batch
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Number of notifications cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cancelled:
+                    type: integer
+                    example: 47
+        '422':
+          description: No pending notifications found for this batch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: No pending notifications found for this batch.
+
+components:
+
+  headers:
+    CorrelationId:
+      description: Unique ID to trace a request across logs and services. Auto-generated if not provided.
+      schema:
+        type: string
+        format: uuid
+      example: 550e8400-e29b-41d4-a716-446655440000
+
+  parameters:
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 018e1234-abcd-7000-beef-000000000001
+
+    RecipientId:
+      name: recipient_id
+      in: query
+      schema:
+        type: integer
+      example: 1
+
+    Status:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/NotificationStatus'
+
+    Channel:
+      name: channel
+      in: query
+      schema:
+        $ref: '#/components/schemas/NotificationChannel'
+
+    Priority:
+      name: priority
+      in: query
+      schema:
+        $ref: '#/components/schemas/NotificationPriority'
+
+    From:
+      name: from
+      in: query
+      description: Filter by created_at >= date (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+      example: '2026-04-01'
+
+    To:
+      name: to
+      in: query
+      description: Filter by created_at <= date (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+      example: '2026-04-30'
+
+    PerPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      example: 20
+
+  schemas:
+
+    NotificationStatus:
+      type: string
+      enum: [pending, processing, sent, failed, cancelled]
+
+    NotificationChannel:
+      type: string
+      enum: [mail, sms, push]
+
+    NotificationPriority:
+      type: string
+      enum: [high, normal, low]
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        idempotency_key:
+          type: string
+          nullable: true
+        batch_id:
+          type: string
+          format: uuid
+          nullable: true
+        recipient_id:
+          type: integer
+        recipient_address:
+          type: string
+          nullable: true
+          description: Phone number for SMS, null for other channels
+          example: "+905551234567"
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        content:
+          type: string
+          maxLength: 1000
+        priority:
+          $ref: '#/components/schemas/NotificationPriority'
+        status:
+          $ref: '#/components/schemas/NotificationStatus'
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        failed_at:
+          type: string
+          format: date-time
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        provider_message_id:
+          type: string
+          nullable: true
+          description: Message ID returned by the external provider (SMS only)
+        created_at:
+          type: string
+          format: date-time
+
+    NotificationResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Notification'
+
+    NotificationCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        meta:
+          type: object
+          properties:
+            current_page: { type: integer }
+            last_page:    { type: integer }
+            per_page:     { type: integer }
+            total:        { type: integer }
+        links:
+          type: object
+          properties:
+            first: { type: string, format: uri }
+            last:  { type: string, format: uri }
+            prev:  { type: string, format: uri, nullable: true }
+            next:  { type: string, format: uri, nullable: true }
+
+    StoreNotificationRequest:
+      type: object
+      required: [recipient_id, channel, content, priority]
+      properties:
+        recipient_id:
+          type: integer
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        content:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        priority:
+          $ref: '#/components/schemas/NotificationPriority'
+        idempotency_key:
+          type: string
+          maxLength: 255
+        recipient_address:
+          type: string
+          maxLength: 20
+          description: Required when channel is sms
+          example: "+905551234567"
+
+    StoreBatchRequest:
+      type: object
+      required: [notifications]
+      properties:
+        notifications:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/StoreNotificationRequest'
+
+    BatchResponse:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        count:
+          type: integer
+          description: Number of notifications queued
+        status:
+          type: string
+          enum: [queued]
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        checks:
+          type: object
+          properties:
+            database: { type: string, enum: [ok, error] }
+            queue:    { type: string, enum: [ok, backlogged] }
+
+    MetricsResponse:
+      type: object
+      properties:
+        notifications:
+          type: object
+          properties:
+            total:        { type: integer }
+            pending:      { type: integer }
+            sent:         { type: integer }
+            failed:       { type: integer }
+            cancelled:    { type: integer }
+            success_rate: { type: number, format: float }
+            failure_rate: { type: number, format: float }
+        latency:
+          type: object
+          properties:
+            avg_ms: { type: number, format: float, nullable: true }
+        queue_depth:
+          type: object
+          additionalProperties:
+            type: integer
+
+  responses:
+    NotFound:
+      description: Resource not found
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: No query results for model.
+
+    ValidationError:
+      description: Validation failed
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          example:
+            message: The given data was invalid.
+            errors:
+              channel: ["The selected channel is invalid."]
