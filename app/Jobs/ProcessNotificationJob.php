@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Contracts\NotificationProvider;
 use App\Enums\NotificationChannel;
 use App\Jobs\Concerns\SendsNotifications;
 use App\Models\Notification;
-use App\Contracts\NotificationProvider;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

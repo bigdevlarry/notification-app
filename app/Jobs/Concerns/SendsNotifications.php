@@ -2,9 +2,9 @@
 
 namespace App\Jobs\Concerns;
 
+use App\Contracts\NotificationProvider;
 use App\Models\Notification;
 use App\Notifications\AppNotification;
-use App\Contracts\NotificationProvider;
 
 trait SendsNotifications
 {

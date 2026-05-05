@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\NotificationProvider;
 use App\Enums\NotificationChannel;
 use App\Enums\NotificationStatus;
 use App\Jobs\ProcessNotificationJob;
 use App\Models\Notification;
-use App\Contracts\NotificationProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
