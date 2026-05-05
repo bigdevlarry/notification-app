@@ -6,7 +6,7 @@ use App\Enums\NotificationChannel;
 use App\Enums\NotificationStatus;
 use App\Jobs\ProcessNotificationJob;
 use App\Models\Notification;
-use App\Services\ExternalNotificationProvider;
+use App\Contracts\NotificationProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -40,7 +40,7 @@ class ExternalProviderTest extends TestCase
         ]);
 
         app(ProcessNotificationJob::class, ['notificationId' => $notification->id])
-            ->handle(app(ExternalNotificationProvider::class));
+            ->handle(app(NotificationProvider::class));
 
         Http::assertSent(fn (Request $request) => $request['to'] === '+905551234567' &&
             $request['channel'] === 'sms' &&
@@ -67,6 +67,6 @@ class ExternalProviderTest extends TestCase
         $this->expectException(\RuntimeException::class);
 
         app(ProcessNotificationJob::class, ['notificationId' => $notification->id])
-            ->handle(app(ExternalNotificationProvider::class));
+            ->handle(app(NotificationProvider::class));
     }
 }

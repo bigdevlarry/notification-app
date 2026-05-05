@@ -5,7 +5,7 @@ namespace App\Jobs;
 use App\Enums\NotificationChannel;
 use App\Jobs\Concerns\SendsNotifications;
 use App\Models\Notification;
-use App\Services\ExternalNotificationProvider;
+use App\Contracts\NotificationProvider;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,7 +31,7 @@ class ProcessNotificationJob implements ShouldQueue
         public readonly ?string $correlationId = null,
     ) {}
 
-    public function handle(ExternalNotificationProvider $provider): void
+    public function handle(NotificationProvider $provider): void
     {
         Log::withContext(['correlation_id' => $this->correlationId]);
 

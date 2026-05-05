@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Contracts\NotificationProvider;
 use Illuminate\Support\Facades\Http;
 
-class ExternalNotificationProvider
+class ExternalNotificationProvider implements NotificationProvider
 {
     public function send(string $to, string $channel, string $content): string
     {

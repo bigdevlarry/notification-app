@@ -4,7 +4,7 @@ namespace App\Jobs\Concerns;
 
 use App\Models\Notification;
 use App\Notifications\AppNotification;
-use App\Services\ExternalNotificationProvider;
+use App\Contracts\NotificationProvider;
 
 trait SendsNotifications
 {
@@ -15,7 +15,7 @@ trait SendsNotifications
         return null;
     }
 
-    private function sendViaProvider(Notification $notification, ExternalNotificationProvider $provider): string
+    private function sendViaProvider(Notification $notification, NotificationProvider $provider): string
     {
         return $provider->send(
             $notification->recipient_address,

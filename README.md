@@ -41,7 +41,7 @@ docker-compose exec app php artisan test
 
 - **Add authentication and create a user flow :** — I would add a user model, and authenticate before sending notifications.
 - 
-- **Push and SMS share the same provider** — in reality they'd use different providers, The `ExternalNotificationProvider` would need to be split or made channel-aware.
+- **Push and SMS share the same provider** — in production each channel would have its own implementation (e.g Twilio for SMS). They'd each implement the `NotificationProvider` interface and get swapped in via `AppServiceProvider`.
 ---
 
 ## API
